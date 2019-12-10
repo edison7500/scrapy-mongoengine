@@ -9,6 +9,10 @@ class MongoEngineExtension(object):
         if not crawler.settings.getbool("MONGOENGINE_ENABLED"):
             raise NotConfigured
 
+        self.mongodb = crawler.settings.get("MONGODB_DATABASES")
+
+        # self.mongo_database = crawler.settings
+
     @classmethod
     def from_crawler(cls, crawler):
         ext = cls(crawler)
@@ -17,7 +21,8 @@ class MongoEngineExtension(object):
         return ext
 
     def spider_opened(self, spider):
-        pass
+        for alias, conn_settings in self.mongodb.items():
+            connection.register_connection(alias, **conn_settings)
 
     def spider_closed(self, spider):
         connection.disconnect()
