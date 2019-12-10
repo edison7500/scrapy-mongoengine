@@ -1,6 +1,18 @@
 import logging
-from mongoengine import fields, DynamicDocument
+from datetime import datetime
+from mongoengine import fields, DynamicDocument, DoesNotExist
 from scrapy.exporters import BaseItemExporter
+
+
+def not_set(string):
+    """Check if a string is None or ''.
+    :returns: bool - True if the string is empty
+    """
+    if string is None:
+        return True
+    elif string == '':
+        return True
+    return False
 
 
 class Article(DynamicDocument):
@@ -25,9 +37,40 @@ class Article(DynamicDocument):
 
 
 class MongoEnginePipeline(BaseItemExporter):
+    config = {"unique_key": None, "append_timestamp": False}
+
     def __init__(self, **kwargs):
         super(MongoEnginePipeline, self).__init__(**kwargs)
         self.logger = logging.getLogger("scrapy-mongoengine-pipeline")
 
+    def open_spider(self, spider):
+        self.crawler = spider.crawler
+        self.settings = spider.settings
+
+        options = [
+            ("unique_key", "MONGODB_UNIQUE_KEY"),
+            ("buffer", "MONGODB_BUFFER_DATA"),
+            ("append_timestamp", "MONGODB_ADD_TIMESTAMP"),
+        ]
+
+        for key, setting in options:
+            if not not_set(self.settings[setting]):
+                self.config[key] = self.settings[setting]
+
     def process_item(self, item, spider):
-        self.logger.info(item)
+        item = dict(self._get_serialized_fields(item))
+        if self.config['append_timestamp']:
+            item['scrapy-mongodb'] = {'ts': datetime.utcnow()}
+        return self.insert_item(item, spider)
+
+    def insert_item(self, item, spider):
+        if self.config["unique_key"] is not None:
+            _key = self.config["unique_key"]
+            try:
+                a = Article.objects.get(**{_key: item[_key]})
+                for k, v in item.items():
+                    setattr(a, k, v)
+            except DoesNotExist as e:
+                a = Article(**item)
+            a.save()
+        return item

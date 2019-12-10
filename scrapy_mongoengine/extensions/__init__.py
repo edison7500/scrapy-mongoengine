@@ -6,12 +6,12 @@ from mongoengine import connection
 class MongoEngineExtension(object):
 
     def __init__(self, crawler):
-        if not crawler.settings.getbool("MONGOENGINE_ENABLED"):
+        if not crawler.settings.getbool("MONGOENGINE_ENABLED", False):
             raise NotConfigured
 
         self.mongodb = crawler.settings.get("MONGODB_DATABASES")
-
-        # self.mongo_database = crawler.settings
+        if self.mongodb is None:
+            raise NotConfigured
 
     @classmethod
     def from_crawler(cls, crawler):
