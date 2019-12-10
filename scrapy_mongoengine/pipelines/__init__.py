@@ -64,11 +64,11 @@ class MongoEnginePipeline(BaseItemExporter):
         if self.config["unique_key"] is not None:
             _key = self.config["unique_key"]
             try:
+                self.logger.info(item[_key])
                 a = Article.objects.get(**{_key: item[_key]})
                 for k, v in item.items():
                     setattr(a, k, v)
             except DoesNotExist as e:
-                self.logger.info(e)
                 a = Article(**item)
             a.save()
         return item
