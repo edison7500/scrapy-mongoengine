@@ -32,9 +32,6 @@ class Article(DynamicDocument):
         "index_background": True,
     }
 
-    def __str__(self):
-        return self.title
-
 
 class MongoEnginePipeline(BaseItemExporter):
     config = {"unique_key": None, "append_timestamp": False}
@@ -71,6 +68,7 @@ class MongoEnginePipeline(BaseItemExporter):
                 for k, v in item.items():
                     setattr(a, k, v)
             except DoesNotExist as e:
+                self.logger.info(e)
                 a = Article(**item)
             a.save()
         return item
