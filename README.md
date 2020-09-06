@@ -3,7 +3,7 @@
 
 ## Usage
 
-in your scrapu settings.py
+in your scrapy settings.py
 
 ```.python
 # mongodb
